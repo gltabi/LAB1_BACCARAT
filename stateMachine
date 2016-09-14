@@ -1,0 +1,96 @@
+module stateMachine (input slow_clock, resetb, dscore, pscore, pcard3, 
+output load_pcard1, load_pcard2, load_pcard3, load_dcard1, load_dcard2, load_dcard3, player_win_light, dealer_win_light);
+
+//change bus width depending on number of states
+wire[3:0] current_state, next_state;
+
+//next state logic
+always_comb
+  begin 
+    case(current_state)
+    	4'b0000: if(slow_clock)
+    				next_state = 4'b0001;
+    			else
+    				next_state = 4'b0000;
+    	4'b0001: if(slow_clock)
+    				next_state = 4'b0010;
+    			else
+    				next_state = 4'b0001;
+    	4'b0010: if(slow_clock)
+    				next_state = 4'b0011;
+    			else
+    				next_state = 4'b0010;
+    	4'b0011: if(slow_clock && (dscore >= 8 || dscore >= 9))
+    				next_state = 4'b0110;
+    			else if(slow_clock && pscore <= 5)
+    				next_state = 4'b0100;
+    			else if(slow_clock && dscore <= 5)
+    				next_state = 4'b0101;
+    			else if(slow_clock)
+    				next_state = 4'b0110;
+    			else 
+    				next_state = 4'b0011;
+    	4'b0100: if(slow_clock && dscore == 7)
+    				next_state = 4'b0110;
+    			else if(slow_clock && dscore == 6 && (pcard3 == 6 || pcard3 == 7))
+    				next_state = 4'b0101;
+    			else if(slow_clock && dscore == 5 && (pcard3 >= 4 && pcard3 <= 7))
+    				next_state = 4'b0101;
+    			else if(slow_clock && dscore == 4 && (pcard3 >= 2 || pcard3 <= 7))
+    				next_state = 4'b0101;
+    			else if(slow_clock && dscore == 3 && (pcard3 != 8))
+    				next_state = 4'b0101;
+    			else if(slow_clock && dscore == 0 || dscore == 1 || dscore == 2)
+    				next_state = 4'b0101;
+    			else if(slow_clock)
+    				next_state = 4'b0110;
+    			else
+    				next_state = 4'b0100;		
+    	4'b0101: if(slow_clock)
+    				next_state = 4'b0110;
+    			else
+    				next_state = 4'b0101;
+    	4'b0110: if(slow_clock && dscore > pscore)
+    				next_state = 4'b1001;
+    			else if(slow_clock && dscore < pscore) 
+    				next_state = 4'b0111;
+    			else if(slow_clock)
+    				next_state = 4'b1000;
+    			else
+    				next_state = 4'b0110;
+    	4'b0111: if(slow_clock)
+    				next_state = 4'b0000;
+    			else
+    				next_state = 4'b0111;
+    	4'b1000: if(slow_clock)
+    				next_state = 4'b0000;
+    			else
+    				next_state = 4'b1000;
+    	4'b1001: if(slow_clock)
+    				next_state = 4'b0000;
+    			else
+    				next_state = 4'b1001;
+    	default: next_state = 4'b0000;
+    endcase
+    if(resetb)
+      next_state = 4'b0000;
+  end
+
+//DFF  
+always_ff @(posedge slow_clock)
+  current_state <= next_state;
+
+//output logic 
+always_comb
+  begin
+    load_pcard1 = (current_state == 4'b0000);
+    load_dcard1 = (current_state == 4'b0001);
+    load_pcard2 = (current_state == 4'b0010);
+    load_dcard2 = (current_state == 4'b0011);
+    load_pcard3 = (current_state == 4'b0100);
+    load_dcard3 = (current_state == 4'b0101);
+    player_win_light = (current_state == 4'b0111) || (current_state == 4'b1000);
+    dealer_win_light = (current_state == 4'b1001) || (current_state == 4'b1000);
+  end
+  
+endmodule
