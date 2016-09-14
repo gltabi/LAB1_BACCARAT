@@ -3,6 +3,8 @@ module scorehand(card1, card2, card3, score);
   output [3:0]: score;
   
   //use the adder file?
-  assign score = (card1 + card2 + card3)%10;
+  always_comb begin
+    assign score = (card1 + card2 + card3)%10;
+  end
 
 endmodule
